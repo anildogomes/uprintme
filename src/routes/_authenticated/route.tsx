@@ -16,11 +16,11 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-type NavItem = { to?: "/dashboard"; label: string; icon: typeof LayoutDashboard; soon?: boolean };
+type NavItem = { to?: "/dashboard" | "/pedidos"; label: string; icon: typeof LayoutDashboard; soon?: boolean };
 const nav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { label: "Clientes", icon: Users, soon: true },
-  { label: "Pedidos", icon: Package, soon: true },
+  { to: "/pedidos", label: "Pedidos", icon: Package },
   { label: "Financeiro", icon: Wallet, soon: true },
   { label: "Loja virtual", icon: Store, soon: true },
 ];
