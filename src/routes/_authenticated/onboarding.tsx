@@ -47,6 +47,7 @@ function OnboardingPage() {
   };
   const mutation = useMutation({
     mutationFn: (payload: Payload) => submit({ data: payload }),
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries();
       toast.success("Empresa criada com sucesso!");
