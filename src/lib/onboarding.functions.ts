@@ -27,25 +27,24 @@ export const completeOnboarding = createServerFn({ method: "POST" })
     }
 
     const name = data.doc_type === "pj" && data.legal_name ? data.legal_name : data.trade_name;
+    const companyId = crypto.randomUUID();
 
-    const { data: company, error: cErr } = await (supabase as unknown as {
+    const { error: cErr } = await (supabase as unknown as {
       from: (t: string) => {
-        insert: (v: Record<string, unknown>) => {
-          select: (s: string) => { single: () => Promise<{ data: { id: string } | null; error: { message: string } | null }> };
-        };
+        insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
       };
     })
       .from("companies")
       .insert({
+        id: companyId,
         name,
         doc_type: data.doc_type,
         doc_number: data.doc_number,
         legal_name: data.doc_type === "pj" ? data.legal_name ?? null : null,
         trade_name: data.trade_name,
-      })
-      .select("id")
-      .single();
-    if (cErr || !company) throw new Error(cErr?.message ?? "Falha ao criar empresa");
+      });
+    if (cErr) throw new Error(cErr.message);
+    const company = { id: companyId };
 
     const { error: uErr } = await supabase
       .from("profiles")
