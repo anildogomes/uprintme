@@ -2,10 +2,11 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, Wallet, Store, LogOut, ShieldAlert, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import logoUm from "@/assets/logoUm.png.asset.json";
+import { useAuthRole, canAccessRoute, type AppRole } from "@/hooks/useAuthRole";
 import {
   Sidebar,
   SidebarContent,
@@ -32,17 +33,17 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 type NavItem = {
-  to?: "/dashboard" | "/pedidos" | "/clientes" | "/financeiro" | "/loja";
+  to: "/dashboard" | "/pedidos" | "/clientes" | "/financeiro" | "/loja";
   label: string;
   icon: typeof LayoutDashboard;
-  soon?: boolean;
+  allow: AppRole[]; // owner sempre incluso implicitamente
 };
 const nav: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/pedidos", label: "Pedidos", icon: Package },
-  { to: "/financeiro", label: "Financeiro", icon: Wallet },
-  { to: "/loja", label: "Loja virtual", icon: Store },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, allow: ["vendedor", "producao", "financeiro"] },
+  { to: "/clientes", label: "Clientes", icon: Users, allow: ["vendedor"] },
+  { to: "/pedidos", label: "Pedidos", icon: Package, allow: ["vendedor", "producao"] },
+  { to: "/financeiro", label: "Financeiro", icon: Wallet, allow: ["financeiro"] },
+  { to: "/loja", label: "Loja virtual", icon: Store, allow: ["vendedor"] },
 ];
 
 function AuthenticatedLayout() {
@@ -50,6 +51,8 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [companyName, setCompanyName] = useState<string>("");
+  const { roles, isLoading: rolesLoading, isOwner } = useAuthRole(user.id);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     (supabase as unknown as {
@@ -79,6 +82,9 @@ function AuthenticatedLayout() {
     navigate({ to: "/auth", replace: true });
   };
 
+  const visibleNav = nav.filter((n) => isOwner || n.allow.some((r) => roles.includes(r)));
+  const allowed = canAccessRoute(pathname, roles);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-secondary/40">
@@ -86,6 +92,7 @@ function AuthenticatedLayout() {
           user={user}
           companyName={companyName}
           onSignOut={handleSignOut}
+          items={visibleNav}
         />
         <div className="flex flex-1 flex-col overflow-x-hidden">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
@@ -95,7 +102,15 @@ function AuthenticatedLayout() {
             </span>
           </header>
           <main className="flex-1">
-            <Outlet />
+            {rolesLoading ? (
+              <div className="flex h-[60vh] items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : allowed ? (
+              <Outlet />
+            ) : (
+              <AccessDenied roles={roles} />
+            )}
           </main>
         </div>
       </div>
@@ -103,14 +118,34 @@ function AuthenticatedLayout() {
   );
 }
 
+function AccessDenied({ roles }: { roles: AppRole[] }) {
+  return (
+    <div className="mx-auto flex max-w-md flex-col items-center justify-center px-6 py-24 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <ShieldAlert className="h-6 w-6" />
+      </div>
+      <h1 className="text-lg font-semibold">Acesso restrito</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Seu perfil {roles.length ? `(${roles.join(", ")})` : "atual"} não tem permissão para esta página.
+        Fale com o responsável (owner) da sua empresa para liberar acesso.
+      </p>
+      <Button asChild variant="outline" className="mt-6">
+        <Link to="/dashboard">Voltar ao dashboard</Link>
+      </Button>
+    </div>
+  );
+}
+
 function AppSidebar({
   user,
   companyName,
   onSignOut,
+  items,
 }: {
   user: { email?: string | null };
   companyName: string;
   onSignOut: () => void;
+  items: NavItem[];
 }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -131,17 +166,7 @@ function AppSidebar({
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {nav.map((item) => {
-                if (item.soon || !item.to) {
-                  return (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton disabled tooltip={item.label}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                }
+              {items.map((item) => {
                 const active = pathname === item.to;
                 return (
                   <SidebarMenuItem key={item.label}>
