@@ -284,7 +284,8 @@ function SignUpForm({ invite, inviteToken }: { invite: Invite | null; inviteToke
     toast.success(
       invite ? "Conta criada! Você já faz parte da empresa." : "Conta criada! Vamos configurar sua empresa.",
     );
-    navigate({ to: redirectTo, replace: true });
+    if (invite) navigate({ to: "/pedidos", replace: true });
+    else navigate({ to: "/onboarding", replace: true });
   };
 
   return (
