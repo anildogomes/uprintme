@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Loader2, Trash2, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthRole, type AppRole } from "@/hooks/useAuthRole";
 
 export const Route = createFileRoute("/_authenticated/pedidos")({
   component: PedidosPage,
