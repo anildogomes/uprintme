@@ -78,13 +78,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "UprintMe — Gestão para gráficas rápidas" },
+      { title: "UprintMe — Gestão para gráficas" },
       { name: "description", content: "SaaS completo para gráficas rápidas: pedidos, financeiro, comissões e loja virtual — tudo em um lugar." },
       { name: "author", content: "UprintMe" },
-      { property: "og:title", content: "UprintMe — Gestão para gráficas rápidas" },
-      { property: "og:description", content: "Substitua o Excel: gerencie pedidos, arte, financeiro e sua loja virtual em uma plataforma clean." },
+      { property: "og:title", content: "UprintMe — Gestão para gráficas" },
+      { property: "og:description", content: "SaaS completo para gráficas rápidas: pedidos, financeiro, comissões e loja virtual — tudo em um lugar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "UprintMe — Gestão para gráficas" },
+      { name: "twitter:description", content: "SaaS completo para gráficas rápidas: pedidos, financeiro, comissões e loja virtual — tudo em um lugar." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6e475839-711c-4370-af56-2f45441a4e82/id-preview-ccba1bf0--cd5aaf56-5324-4abf-ac44-75c4f09c033d.lovable.app-1783003563860.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6e475839-711c-4370-af56-2f45441a4e82/id-preview-ccba1bf0--cd5aaf56-5324-4abf-ac44-75c4f09c033d.lovable.app-1783003563860.png" },
     ],
     links: [
       {
