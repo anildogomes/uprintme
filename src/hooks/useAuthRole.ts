@@ -42,6 +42,7 @@ export const ROUTE_ACCESS: Record<string, AppRole[]> = {
   "/pedidos": ["vendedor", "producao"],
   "/financeiro": ["financeiro"],
   "/loja": ["vendedor"],
+  "/membros": [], // owner-only (owner é liberado antes)
 };
 
 export function canAccessRoute(pathname: string, roles: AppRole[]): boolean {
