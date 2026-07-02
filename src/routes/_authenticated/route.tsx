@@ -71,10 +71,23 @@ function AuthenticatedLayout() {
         </div>
         <nav className="flex-1 space-y-1 p-4">
           {nav.map((item) => {
+            if (item.soon) {
+              return (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground/60"
+                  title="Em breve"
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="flex-1">{item.label}</span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">em breve</span>
+                </div>
+              );
+            }
             const active = pathname === item.to;
             return (
               <Link
-                key={item.to}
+                key={item.label}
                 to={item.to}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                   active
