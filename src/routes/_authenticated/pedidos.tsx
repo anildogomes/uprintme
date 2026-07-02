@@ -199,11 +199,13 @@ function PedidosPage() {
             </Button>
           </div>
           <Dialog open={openNew} onOpenChange={setOpenNew}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" /> Novo pedido
-              </Button>
-            </DialogTrigger>
+            {canCreate && (
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" /> Novo pedido
+                </Button>
+              </DialogTrigger>
+            )}
             <NewOrderDialog clients={clients} onDone={() => setOpenNew(false)} />
           </Dialog>
         </div>
@@ -239,24 +241,27 @@ function PedidosPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState onNew={() => setOpenNew(true)} hasAny={orders.length > 0} />
+        <EmptyState onNew={() => setOpenNew(true)} hasAny={orders.length > 0} canCreate={canCreate} />
       ) : view === "list" ? (
         <ListView
           orders={filtered}
           onStatus={(id, status) => updateStatus.mutate({ id, status })}
           onDelete={(id) => removeOrder.mutate(id)}
+          allowedStatuses={allowedStatuses}
+          canDelete={canDelete}
         />
       ) : (
         <KanbanView
           orders={filtered}
           onStatus={(id, status) => updateStatus.mutate({ id, status })}
+          allowedStatuses={allowedStatuses}
         />
       )}
     </div>
   );
 }
 
-function EmptyState({ onNew, hasAny }: { onNew: () => void; hasAny: boolean }) {
+function EmptyState({ onNew, hasAny, canCreate }: { onNew: () => void; hasAny: boolean; canCreate: boolean }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
       <h3 className="text-lg font-semibold">
@@ -267,9 +272,11 @@ function EmptyState({ onNew, hasAny }: { onNew: () => void; hasAny: boolean }) {
           ? "Ajuste os filtros ou crie um novo pedido."
           : "Comece cadastrando seu primeiro pedido para acompanhar produção e entrega."}
       </p>
-      <Button onClick={onNew} className="mt-4 gap-2">
-        <Plus className="h-4 w-4" /> Novo pedido
-      </Button>
+      {canCreate && (
+        <Button onClick={onNew} className="mt-4 gap-2">
+          <Plus className="h-4 w-4" /> Novo pedido
+        </Button>
+      )}
     </div>
   );
 }
