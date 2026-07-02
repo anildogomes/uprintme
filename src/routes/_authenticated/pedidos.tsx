@@ -76,10 +76,25 @@ const db = supabase as unknown as {
 
 function PedidosPage() {
   const qc = useQueryClient();
-  const [view, setView] = useState<"list" | "kanban">("list");
+  const [userId, setUserId] = useState<string | undefined>();
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id));
+  }, []);
+  const { roles, isOwner, hasAny } = useAuthRole(userId);
+  const isProducaoOnly = hasAny(["producao"]) && !isOwner && !hasAny(["vendedor"]);
+  const canCreate = isOwner || hasAny(["vendedor"]);
+  const canDelete = isOwner || hasAny(["vendedor"]);
+  const allowedStatuses: OrderStatus[] = isOwner || hasAny(["vendedor"])
+    ? ["novo", "em_producao", "pronto", "entregue", "cancelado"]
+    : ["em_producao", "pronto"]; // produção só transiciona nessas
+  const [view, setView] = useState<"list" | "kanban">(isProducaoOnly ? "kanban" : "list");
+  useEffect(() => {
+    if (isProducaoOnly) setView("kanban");
+  }, [isProducaoOnly]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [openNew, setOpenNew] = useState(false);
+  void roles;
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey: ["orders"],
