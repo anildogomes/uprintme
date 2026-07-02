@@ -52,10 +52,44 @@ import {
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    const user = data.user;
+
+    // Gate de onboarding: bloqueia acesso a rotas protegidas até o profile
+    // ter company_id. Executado antes de qualquer render — evita flash.
+    let profile: {
+      full_name: string | null;
+      company_id: string | null;
+      companyName: string | null;
+    } = { full_name: null, company_id: null, companyName: null };
+    try {
+      const { data: p, error: pErr } = await supabase
+        .from("profiles")
+        .select("full_name, company_id, companies(name)")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (pErr) throw pErr;
+      const c = (p?.companies ?? null) as { name?: string } | null;
+      profile = {
+        full_name: p?.full_name ?? null,
+        company_id: p?.company_id ?? null,
+        companyName: c?.name ?? null,
+      };
+    } catch (e) {
+      console.error("[auth-gate] falha ao carregar profile", e);
+      // Falha transitória: deixa entrar; a UI mostrará estado de erro na página.
+    }
+
+    const path = location.pathname;
+    if (!profile.company_id && path !== "/onboarding") {
+      throw redirect({ to: "/onboarding" });
+    }
+    if (profile.company_id && path === "/onboarding") {
+      throw redirect({ to: "/pedidos" });
+    }
+    return { user, profile };
   },
   component: AuthenticatedLayout,
 });
@@ -104,43 +138,13 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 function AuthenticatedLayout() {
-  const { user } = Route.useRouteContext();
+  const { user, profile } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [companyName, setCompanyName] = useState<string>("");
-  const [fullName, setFullName] = useState<string>("");
+  const companyName = profile.companyName ?? "";
+  const fullName = profile.full_name ?? "";
   const { roles, isLoading: rolesLoading, isOwner } = useAuthRole(user.id);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  useEffect(() => {
-    (supabase as unknown as {
-      from: (t: string) => {
-        select: (s: string) => {
-          eq: (c: string, v: string) => {
-            maybeSingle: () => Promise<{
-              data: {
-                full_name?: string | null;
-                company_id?: string | null;
-                companies?: { name?: string } | null;
-              } | null;
-            }>;
-          };
-        };
-      };
-    })
-      .from("profiles")
-      .select("full_name, company_id, companies(name)")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const c = data?.companies as { name?: string } | null | undefined;
-        if (c?.name) setCompanyName(c.name);
-        if (data?.full_name) setFullName(data.full_name);
-        if (data && !data.company_id && pathname !== "/onboarding") {
-          navigate({ to: "/onboarding", replace: true });
-        }
-      });
-  }, [user.id, pathname, navigate]);
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
