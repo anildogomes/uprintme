@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Printer, Loader2 } from "lucide-react";
+import { Printer, Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup", "reset"]).optional(),
+  invite: z.string().uuid().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -24,15 +25,39 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+type Invite = { id: string; email: string; role: string; company_id: string; companies?: { name: string } | null };
+
 function AuthPage() {
-  const { mode } = Route.useSearch();
+  const { mode, invite } = Route.useSearch();
   const navigate = useNavigate();
+  const [inviteData, setInviteData] = useState<Invite | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (!invite) return;
+    (supabase as unknown as { from: (t: string) => any })
+      .from("invitations")
+      .select("id, email, role, company_id, companies(name)")
+      .eq("token", invite)
+      .is("accepted_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle()
+      .then(({ data, error }: { data: Invite | null; error: { message: string } | null }) => {
+        if (error || !data) {
+          setInviteError("Convite inválido, já utilizado ou expirado.");
+          return;
+        }
+        setInviteData(data);
+      });
+  }, [invite]);
+
+  const initialTab = invite || mode === "signup" ? "signup" : "signin";
 
   return (
     <div
@@ -47,8 +72,23 @@ function AuthPage() {
           <span className="text-xl font-bold tracking-tight">UprintMe</span>
         </Link>
 
+        {invite && inviteData && (
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
+            <MailCheck className="mt-0.5 h-4 w-4 flex-none text-primary" />
+            <div>
+              Você foi convidado para <strong>{inviteData.companies?.name ?? "uma empresa"}</strong> como{" "}
+              <strong>{inviteData.role}</strong>. Crie sua conta para aceitar.
+            </div>
+          </div>
+        )}
+        {invite && inviteError && (
+          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {inviteError}
+          </div>
+        )}
+
         <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-elegant)] sm:p-8">
-          <Tabs defaultValue={mode === "signup" ? "signup" : "signin"}>
+          <Tabs defaultValue={initialTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
@@ -57,7 +97,7 @@ function AuthPage() {
               <SignInForm />
             </TabsContent>
             <TabsContent value="signup" className="mt-6">
-              <SignUpForm />
+              <SignUpForm invite={inviteData} inviteToken={invite ?? null} />
             </TabsContent>
           </Tabs>
         </div>
@@ -203,29 +243,44 @@ const signupSchema = z.object({
   email: z.string().trim().email("Email inválido"),
   password: z.string().min(6, "Mínimo 6 caracteres"),
 });
+const signupInviteSchema = signupSchema.omit({ company_name: true });
 
-function SignUpForm() {
+function SignUpForm({ invite, inviteToken }: { invite: Invite | null; inviteToken: string | null }) {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ full_name: "", company_name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    full_name: "",
+    company_name: "",
+    email: invite?.email ?? "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (invite?.email) setForm((f) => ({ ...f, email: invite.email }));
+  }, [invite?.email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = signupSchema.safeParse(form);
+    const parsed = invite
+      ? signupInviteSchema.safeParse(form)
+      : signupSchema.safeParse(form);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
     }
     setLoading(true);
+    const meta: Record<string, string> = { full_name: form.full_name };
+    if (invite && inviteToken) {
+      meta.invitation_token = inviteToken;
+    } else {
+      meta.company_name = form.company_name;
+    }
     const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
+      email: form.email,
+      password: form.password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: {
-          full_name: parsed.data.full_name,
-          company_name: parsed.data.company_name,
-        },
+        data: meta,
       },
     });
     setLoading(false);
@@ -233,7 +288,9 @@ function SignUpForm() {
       toast.error(error.message);
       return;
     }
-    toast.success("Conta criada! Bem-vindo ao UprintMe.");
+    toast.success(
+      invite ? "Conta criada! Você já faz parte da empresa." : "Conta criada! Bem-vindo ao UprintMe.",
+    );
     navigate({ to: "/dashboard", replace: true });
   };
 
@@ -245,13 +302,22 @@ function SignUpForm() {
         <Label htmlFor="su-name">Seu nome</Label>
         <Input id="su-name" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="su-company">Nome da gráfica</Label>
-        <Input id="su-company" required value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
-      </div>
+      {!invite && (
+        <div className="space-y-2">
+          <Label htmlFor="su-company">Nome da gráfica</Label>
+          <Input id="su-company" required value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="su-email">Email</Label>
-        <Input id="su-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <Input
+          id="su-email"
+          type="email"
+          required
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          disabled={!!invite}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="su-password">Senha</Label>
@@ -259,7 +325,7 @@ function SignUpForm() {
       </div>
       <Button type="submit" disabled={loading} className="w-full">
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Criar conta grátis
+        {invite ? "Aceitar convite e entrar" : "Criar conta grátis"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
         Ao criar sua conta você concorda com nossos termos de uso.
