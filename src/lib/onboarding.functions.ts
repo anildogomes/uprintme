@@ -46,13 +46,15 @@ export const completeOnboarding = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     const company = { id: companyId };
 
-    const { error: uErr } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error: uErr } = await supabaseAdmin
       .from("profiles")
       .update({ full_name: data.full_name, company_id: company.id })
       .eq("id", userId);
     if (uErr) throw new Error(uErr.message);
 
-    const { error: rErr } = await (supabase as unknown as {
+    const { error: rErr } = await (supabaseAdmin as unknown as {
       from: (t: string) => {
         insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
       };
