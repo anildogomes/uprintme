@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
+  Printer,
   CheckCircle2,
   Rocket,
   TrendingUp,
@@ -15,8 +16,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/logo.png.asset.json";
-
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -60,24 +59,23 @@ function MobileHero() {
     });
   }, [navigate]);
   return (
-    <section className="flex flex-1 flex-col items-center px-6 pt-12 pb-8 text-center">
-      <img
-        src={logoAsset.url}
-        alt="UprintMe"
-        className="h-40 w-40 object-contain"
-      />
-      <h1 className="mt-6 text-5xl font-extrabold tracking-tight">
-        <span className="text-primary">U</span>
-        <span className="text-foreground">printMe</span>
+    <section className="flex flex-1 flex-col items-center px-6 pt-16 pb-8 text-center">
+      <div
+        className="flex h-32 w-32 items-center justify-center rounded-3xl text-primary-foreground shadow-[var(--shadow-elegant)]"
+        style={{ background: "var(--gradient-primary)" }}
+      >
+        <Printer className="h-16 w-16" />
+      </div>
+      <h1 className="mt-8 text-4xl font-bold tracking-tight">
+        <span className="text-primary">U</span>printMe
       </h1>
-      <p className="mt-6 text-lg text-muted-foreground">
+      <p className="mt-6 text-base text-muted-foreground">
         Pedidos, clientes e{" "}
         <span className="font-semibold text-primary">crescimento</span> em um só lugar.
       </p>
-      <p className="mt-5 text-base leading-relaxed text-muted-foreground">
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
         Sistema completo e inteligente para sua gráfica produzir mais, organizar o negócio e tomar decisões com confiança.
       </p>
-
       <div className="mt-auto w-full pt-12">
         <div className="grid grid-cols-2 gap-3">
           <Link to="/auth" search={{ mode: "signin" }}>
@@ -114,7 +112,9 @@ function Header() {
     <header className="border-b border-border/60 bg-background">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoAsset.url} alt="UprintMe" className="h-9 w-9 object-contain" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
+            <Printer className="h-5 w-5" />
+          </div>
           <span className="text-lg font-bold tracking-tight">UprintMe</span>
         </Link>
         <Link to="/auth">

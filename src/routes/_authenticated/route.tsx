@@ -2,8 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
-import logoAsset from "@/assets/logo.png.asset.json";
+import { Printer, LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -70,7 +69,9 @@ function AuthenticatedLayout() {
     <div className="flex min-h-screen bg-secondary/40">
       <aside className="hidden w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-          <img src={logoAsset.url} alt="UprintMe" className="h-8 w-8 object-contain" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Printer className="h-4 w-4" />
+          </div>
           <span className="font-bold tracking-tight">UprintMe</span>
         </div>
         <nav className="flex-1 space-y-1 p-4">
