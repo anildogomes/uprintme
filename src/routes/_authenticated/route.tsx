@@ -6,6 +6,20 @@ import { LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-r
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import logoUm from "@/assets/logoUm.png.asset.json";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -35,7 +49,6 @@ function AuthenticatedLayout() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [companyName, setCompanyName] = useState<string>("");
 
   useEffect(() => {
@@ -67,56 +80,103 @@ function AuthenticatedLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-secondary/40">
-      <aside className="hidden w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
-          <img src={logoUm.url} alt="UprintMe" className="h-8 w-auto" />
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-secondary/40">
+        <AppSidebar
+          user={user}
+          companyName={companyName}
+          onSignOut={handleSignOut}
+        />
+        <div className="flex flex-1 flex-col overflow-x-hidden">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
+            <SidebarTrigger />
+            <span className="text-sm font-medium text-muted-foreground">
+              {companyName || "Sua gráfica"}
+            </span>
+          </header>
+          <main className="flex-1">
+            <Outlet />
+          </main>
         </div>
-        <nav className="flex-1 space-y-1 p-4">
-          {nav.map((item) => {
-            if (item.soon) {
-              return (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground/60"
-                  title="Em breve"
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="flex-1">{item.label}</span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">em breve</span>
-                </div>
-              );
-            }
-            const active = pathname === item.to;
-            return (
-              <Link
-                key={item.label}
-                to={item.to}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-soft)]"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-sidebar-border p-4">
-          <div className="mb-2 truncate text-xs text-muted-foreground">
-            {companyName || "Sua gráfica"}
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function AppSidebar({
+  user,
+  companyName,
+  onSignOut,
+}: {
+  user: { email?: string | null };
+  companyName: string;
+  onSignOut: () => void;
+}) {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex h-12 items-center justify-center px-2">
+          <img
+            src={logoUm.url}
+            alt="UprintMe"
+            className={collapsed ? "h-7 w-7 object-contain" : "h-8 w-auto"}
+          />
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {nav.map((item) => {
+                if (item.soon || !item.to) {
+                  return (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton disabled tooltip={item.label}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
+                const active = pathname === item.to;
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                      <Link to={item.to}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border">
+        {!collapsed && (
+          <div className="px-2 pb-2">
+            <div className="mb-1 truncate text-xs text-muted-foreground">
+              {companyName || "Sua gráfica"}
+            </div>
+            <div className="mb-2 truncate text-sm font-medium">{user.email}</div>
           </div>
-          <div className="mb-3 truncate text-sm font-medium">{user.email}</div>
-          <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full gap-2">
-            <LogOut className="h-4 w-4" /> Sair
-          </Button>
-        </div>
-      </aside>
-      <main className="flex-1 overflow-x-hidden">
-        <Outlet />
-      </main>
-    </div>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSignOut}
+          className="w-full gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span>Sair</span>}
+        </Button>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
