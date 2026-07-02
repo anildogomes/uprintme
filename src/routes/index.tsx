@@ -124,35 +124,57 @@ const highlights = [
 function HeroSplit() {
   return (
     <section
-      className="relative"
-      style={{ background: "var(--gradient-soft)" }}
+      className="relative overflow-hidden"
+      style={{ background: "var(--gradient-hero)" }}
     >
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:gap-16 lg:px-8 lg:py-24">
+      {/* subtle noise / grid texture */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="relative mx-auto grid max-w-7xl gap-16 px-6 py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-20 lg:px-8 lg:py-28">
         {/* Left: pitch + features */}
         <div>
-          <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            Controle sua gráfica,{" "}
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--gold)" }}
+            />
+            Plataforma completa para gráficas rápidas
+          </div>
+          <h1 className="mt-6 text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+            A gestão da sua gráfica,{" "}
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: "var(--gradient-primary)" }}
             >
-              pedidos e crescimento
+              refinada
             </span>{" "}
-            em um só lugar.
+            ao detalhe.
           </h1>
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-            Sistema completo e inteligente para você produzir mais, organizar
-            seu negócio e tomar decisões com confiança.
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            Pedidos, clientes, financeiro e loja virtual em uma única plataforma
+            pensada para quem produz — com a serenidade de quem tem tudo sob controle.
           </p>
 
-          <div className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
+          <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3">
             {highlights.map((h) => (
-              <div key={h.title} className="text-center">
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <h.icon className="h-5 w-5" />
+              <div key={h.title}>
+                <div
+                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-card"
+                  style={{ boxShadow: "var(--shadow-soft)" }}
+                >
+                  <h.icon className="h-5 w-5 text-primary" />
                 </div>
-                <div className="mt-3 text-sm font-semibold">{h.title}</div>
-                <div className="mt-1 text-xs leading-snug text-muted-foreground">
+                <div className="mt-4 font-display text-sm font-semibold tracking-tight">
+                  {h.title}
+                </div>
+                <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {h.desc}
                 </div>
               </div>
@@ -161,7 +183,7 @@ function HeroSplit() {
         </div>
 
         {/* Right: auth card */}
-        <div className="lg:pl-4">
+        <div className="lg:pl-6">
           <AuthCard />
         </div>
       </div>
