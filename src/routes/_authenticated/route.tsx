@@ -70,9 +70,7 @@ function AuthenticatedLayout() {
     <div className="flex min-h-screen bg-secondary/40">
       <aside className="hidden w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Printer className="h-4 w-4" />
-          </div>
+          <img src={logoAsset.url} alt="UprintMe" className="h-8 w-8 object-contain" />
           <span className="font-bold tracking-tight">UprintMe</span>
         </div>
         <nav className="flex-1 space-y-1 p-4">
