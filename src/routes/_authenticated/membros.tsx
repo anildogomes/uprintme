@@ -140,6 +140,72 @@ function MembrosPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // ------ Convites ------
+  const { data: invites = [], isLoading: iLoading } = useQuery<
+    { id: string; email: string; role: AppRole; token: string; expires_at: string }[]
+  >({
+    queryKey: ["company-invitations", companyId],
+    enabled: !!companyId && isOwner,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("invitations")
+        .select("id, email, role, token, expires_at")
+        .eq("company_id", companyId)
+        .is("accepted_at", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<AppRole>("vendedor");
+
+  const createInvite = useMutation({
+    mutationFn: async () => {
+      const email = inviteEmail.trim().toLowerCase();
+      if (!email) throw new Error("Informe o e-mail");
+      const { data, error } = await db
+        .from("invitations")
+        .insert({
+          company_id: companyId,
+          email,
+          role: inviteRole,
+          invited_by: user.id,
+        })
+        .select("token")
+        .single();
+      if (error) throw error;
+      return data as { token: string };
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["company-invitations", companyId] });
+      setInviteEmail("");
+      const link = `${window.location.origin}/auth?invite=${data.token}`;
+      navigator.clipboard?.writeText(link).catch(() => {});
+      toast.success("Convite criado — link copiado para a área de transferência");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const revokeInvite = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db.from("invitations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["company-invitations", companyId] });
+      toast.success("Convite revogado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const copyInviteLink = (token: string) => {
+    const link = `${window.location.origin}/auth?invite=${token}`;
+    navigator.clipboard?.writeText(link);
+    toast.success("Link copiado");
+  };
+
   if (rolesLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -165,17 +231,99 @@ function MembrosPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
-      <header className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <UserCog className="h-6 w-6" /> Membros da empresa
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Defina os perfis (vendedor, produção, financeiro, owner) de cada usuário.
-            Convites por e-mail chegam na próxima etapa.
-          </p>
-        </div>
+      <header className="mb-6">
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <UserCog className="h-6 w-6" /> Membros da empresa
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Convide novos usuários e defina os perfis (owner, vendedor, produção, financeiro).
+        </p>
       </header>
+
+      {/* Formulário de convite */}
+      <section className="mb-8 rounded-2xl border border-border bg-card p-5">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <Mail className="h-4 w-4" /> Convidar novo membro
+        </h2>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            createInvite.mutate();
+          }}
+          className="grid gap-3 sm:grid-cols-[1fr,180px,auto]"
+        >
+          <div>
+            <Label htmlFor="inv-email" className="sr-only">E-mail</Label>
+            <Input
+              id="inv-email"
+              type="email"
+              required
+              placeholder="email@exemplo.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="sr-only">Perfil</Label>
+            <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as AppRole)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" disabled={createInvite.isPending}>
+            {createInvite.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Gerar convite
+          </Button>
+        </form>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Ao gerar, o link é copiado automaticamente. Envie ao convidado para ele criar a conta
+          já dentro da sua empresa.
+        </p>
+
+        {invites.length > 0 && (
+          <div className="mt-5 space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Convites pendentes
+            </h3>
+            {invites.map((i) => (
+              <div
+                key={i.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{i.email}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {ROLE_LABEL[i.role]} · expira {new Date(i.expires_at).toLocaleDateString("pt-BR")}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => copyInviteLink(i.token)}>
+                  <Copy className="mr-1 h-3.5 w-3.5" /> Link
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => revokeInvite.mutate(i.id)}
+                  disabled={revokeInvite.isPending}
+                >
+                  <X className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        {iLoading && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> carregando convites…
+          </div>
+        )}
+      </section>
+
+      <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Membros ativos</h2>
+
 
       {pLoading || rLoading ? (
         <div className="flex items-center justify-center rounded-2xl border border-border bg-card py-12">
