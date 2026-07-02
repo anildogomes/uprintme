@@ -32,13 +32,21 @@ function AuthenticatedLayout() {
   const [companyName, setCompanyName] = useState<string>("");
 
   useEffect(() => {
-    supabase
+    (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: string) => {
+            maybeSingle: () => Promise<{ data: { companies?: { name?: string } | null } | null }>;
+          };
+        };
+      };
+    })
       .from("profiles")
       .select("company_id, companies(name)")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        const c = data?.companies as { name?: string } | null;
+        const c = data?.companies as { name?: string } | null | undefined;
         if (c?.name) setCompanyName(c.name);
       });
   }, [user.id]);
