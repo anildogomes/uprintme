@@ -239,17 +239,14 @@ function SignInForm() {
 
 const signupSchema = z.object({
   full_name: z.string().trim().min(2, "Informe seu nome"),
-  company_name: z.string().trim().min(2, "Informe o nome da gráfica"),
   email: z.string().trim().email("Email inválido"),
   password: z.string().min(6, "Mínimo 6 caracteres"),
 });
-const signupInviteSchema = signupSchema.omit({ company_name: true });
 
 function SignUpForm({ invite, inviteToken }: { invite: Invite | null; inviteToken: string | null }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     full_name: "",
-    company_name: "",
     email: invite?.email ?? "",
     password: "",
   });
@@ -261,25 +258,21 @@ function SignUpForm({ invite, inviteToken }: { invite: Invite | null; inviteToke
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = invite
-      ? signupInviteSchema.safeParse(form)
-      : signupSchema.safeParse(form);
+    const parsed = signupSchema.safeParse(form);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
     }
     setLoading(true);
     const meta: Record<string, string> = { full_name: form.full_name };
-    if (invite && inviteToken) {
-      meta.invitation_token = inviteToken;
-    } else {
-      meta.company_name = form.company_name;
-    }
+    if (invite && inviteToken) meta.invitation_token = inviteToken;
+
+    const redirectTo = invite ? "/pedidos" : "/onboarding";
     const { error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}${redirectTo}`,
         data: meta,
       },
     });
@@ -289,9 +282,9 @@ function SignUpForm({ invite, inviteToken }: { invite: Invite | null; inviteToke
       return;
     }
     toast.success(
-      invite ? "Conta criada! Você já faz parte da empresa." : "Conta criada! Bem-vindo ao UprintMe.",
+      invite ? "Conta criada! Você já faz parte da empresa." : "Conta criada! Vamos configurar sua empresa.",
     );
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: redirectTo, replace: true });
   };
 
   return (
@@ -302,12 +295,6 @@ function SignUpForm({ invite, inviteToken }: { invite: Invite | null; inviteToke
         <Label htmlFor="su-name">Seu nome</Label>
         <Input id="su-name" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
       </div>
-      {!invite && (
-        <div className="space-y-2">
-          <Label htmlFor="su-company">Nome da gráfica</Label>
-          <Input id="su-company" required value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
-        </div>
-      )}
       <div className="space-y-2">
         <Label htmlFor="su-email">Email</Label>
         <Input
