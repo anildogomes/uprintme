@@ -103,12 +103,9 @@ function MobileFooter() {
 function Header() {
   return (
     <header className="border-b border-border/60 bg-background">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoUm.url} alt="UprintMe" className="h-8 w-auto" />
-        </Link>
-        <Link to="/auth">
-          <Button size="sm" variant="ghost">Acessar sistema</Button>
+          <img src={logoUm.url} alt="UprintMe" className="h-14 w-auto" />
         </Link>
       </div>
     </header>
