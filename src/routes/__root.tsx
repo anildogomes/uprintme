@@ -84,6 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Substitua o Excel: gerencie pedidos, arte, financeiro e sua loja virtual em uma plataforma clean." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
     links: [
       {
         rel: "stylesheet",
