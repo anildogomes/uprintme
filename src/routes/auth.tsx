@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Printer, Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getInvitationByToken } from "@/lib/invitations.functions";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup", "reset"]).optional(),
@@ -25,37 +27,50 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-type Invite = { id: string; email: string; role: string; company_id: string; companies?: { name: string } | null };
+type Invite = {
+  id: string;
+  email: string;
+  role: string;
+  company_id: string;
+  company_name: string | null;
+};
 
 function AuthPage() {
   const { mode, invite } = Route.useSearch();
   const navigate = useNavigate();
   const [inviteData, setInviteData] = useState<Invite | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const lookupInvite = useServerFn(getInvitationByToken);
 
   useEffect(() => {
+    let active = true;
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (active && data.session) navigate({ to: "/pedidos", replace: true });
     });
+    return () => {
+      active = false;
+    };
   }, [navigate]);
 
   useEffect(() => {
     if (!invite) return;
-    (supabase as unknown as { from: (t: string) => any })
-      .from("invitations")
-      .select("id, email, role, company_id, companies(name)")
-      .eq("token", invite)
-      .is("accepted_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle()
-      .then(({ data, error }: { data: Invite | null; error: { message: string } | null }) => {
-        if (error || !data) {
+    let active = true;
+    lookupInvite({ data: { token: invite } })
+      .then((row) => {
+        if (!active) return;
+        if (!row) {
           setInviteError("Convite inválido, já utilizado ou expirado.");
           return;
         }
-        setInviteData(data);
+        setInviteData(row);
+      })
+      .catch(() => {
+        if (active) setInviteError("Não foi possível validar o convite.");
       });
-  }, [invite]);
+    return () => {
+      active = false;
+    };
+  }, [invite, lookupInvite]);
 
   const initialTab = invite || mode === "signup" ? "signup" : "signin";
 
@@ -76,7 +91,7 @@ function AuthPage() {
           <div className="mb-4 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
             <MailCheck className="mt-0.5 h-4 w-4 flex-none text-primary" />
             <div>
-              Você foi convidado para <strong>{inviteData.companies?.name ?? "uma empresa"}</strong> como{" "}
+              Você foi convidado para <strong>{inviteData.company_name ?? "uma empresa"}</strong> como{" "}
               <strong>{inviteData.role}</strong>. Crie sua conta para aceitar.
             </div>
           </div>
@@ -114,9 +129,13 @@ function GoogleButton({ loading }: { loading: boolean }) {
   const [busy, setBusy] = useState(false);
   const handleGoogle = async () => {
     setBusy(true);
+    // redirectTo aponta para rota pública (a home). Após SIGNED_IN o listener
+    // global no __root invalida o router e o guard do _authenticated leva o
+    // usuário para o destino final. Isso evita bounce na rota protegida
+    // enquanto a sessão ainda está sendo hidratada.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: { redirectTo: `${window.location.origin}/` },
     });
     if (error) {
       toast.error(error.message);
