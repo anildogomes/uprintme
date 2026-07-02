@@ -420,7 +420,8 @@ function KanbanView({
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
               {items.length === 0 && (
                 <div className="rounded-lg border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
                   Arraste aqui
