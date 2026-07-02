@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Package, Wallet, Store, LogOut, ShieldAlert, Loader2 } from "lucide-react";
+import { LayoutDashboard, Users, Package, Wallet, Store, LogOut, ShieldAlert, Loader2, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import logoUm from "@/assets/logoUm.png.asset.json";
@@ -33,10 +33,11 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 type NavItem = {
-  to: "/dashboard" | "/pedidos" | "/clientes" | "/financeiro" | "/loja";
+  to: "/dashboard" | "/pedidos" | "/clientes" | "/financeiro" | "/loja" | "/membros";
   label: string;
   icon: typeof LayoutDashboard;
   allow: AppRole[]; // owner sempre incluso implicitamente
+  ownerOnly?: boolean;
 };
 const nav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, allow: ["vendedor", "producao", "financeiro"] },
@@ -44,6 +45,7 @@ const nav: NavItem[] = [
   { to: "/pedidos", label: "Pedidos", icon: Package, allow: ["vendedor", "producao"] },
   { to: "/financeiro", label: "Financeiro", icon: Wallet, allow: ["financeiro"] },
   { to: "/loja", label: "Loja virtual", icon: Store, allow: ["vendedor"] },
+  { to: "/membros", label: "Membros", icon: UserCog, allow: [], ownerOnly: true },
 ];
 
 function AuthenticatedLayout() {
