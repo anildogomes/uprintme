@@ -16,12 +16,13 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-const nav = [
+type NavItem = { to?: "/dashboard"; label: string; icon: typeof LayoutDashboard; soon?: boolean };
+const nav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/pedidos", label: "Pedidos", icon: Package },
-  { to: "/financeiro", label: "Financeiro", icon: Wallet },
-  { to: "/loja", label: "Loja virtual", icon: Store },
+  { label: "Clientes", icon: Users, soon: true },
+  { label: "Pedidos", icon: Package, soon: true },
+  { label: "Financeiro", icon: Wallet, soon: true },
+  { label: "Loja virtual", icon: Store, soon: true },
 ];
 
 function AuthenticatedLayout() {
