@@ -105,7 +105,11 @@ function AuthenticatedLayout() {
         select: (s: string) => {
           eq: (c: string, v: string) => {
             maybeSingle: () => Promise<{
-              data: { full_name?: string | null; companies?: { name?: string } | null } | null;
+              data: {
+                full_name?: string | null;
+                company_id?: string | null;
+                companies?: { name?: string } | null;
+              } | null;
             }>;
           };
         };
@@ -119,8 +123,11 @@ function AuthenticatedLayout() {
         const c = data?.companies as { name?: string } | null | undefined;
         if (c?.name) setCompanyName(c.name);
         if (data?.full_name) setFullName(data.full_name);
+        if (data && !data.company_id && pathname !== "/onboarding") {
+          navigate({ to: "/onboarding", replace: true });
+        }
       });
-  }, [user.id]);
+  }, [user.id, pathname, navigate]);
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
@@ -145,6 +152,10 @@ function AuthenticatedLayout() {
   }, [pathname]);
 
   const roleLabel = isOwner ? "Gestor" : roles[0] ?? "Membro";
+
+  if (pathname === "/onboarding") {
+    return <Outlet />;
+  }
 
   return (
     <SidebarProvider>
