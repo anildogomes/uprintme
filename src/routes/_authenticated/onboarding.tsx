@@ -47,6 +47,7 @@ function OnboardingPage() {
   };
   const mutation = useMutation({
     mutationFn: (payload: Payload) => submit({ data: payload }),
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries();
       toast.success("Empresa criada com sucesso!");
@@ -155,9 +156,21 @@ function OnboardingPage() {
             />
           </div>
 
+          {mutation.isError && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <p className="font-medium">Não foi possível concluir o cadastro.</p>
+              <p className="mt-1 text-xs">
+                {mutation.error instanceof Error ? mutation.error.message : "Erro desconhecido."}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Verifique os dados e tente novamente. Se o erro persistir, contate o suporte.
+              </p>
+            </div>
+          )}
+
           <Button type="submit" disabled={mutation.isPending} className="w-full">
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Criar minha empresa
+            {mutation.isError ? "Tentar novamente" : "Criar minha empresa"}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             Você poderá ajustar todos os detalhes depois.

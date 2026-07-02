@@ -33,18 +33,26 @@ export const completeOnboarding = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => onboardingSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const log = (step: string, extra: Record<string, unknown> = {}) =>
+      console.log(`[onboarding] ${step}`, { userId, ...extra });
+
+    log("start", { doc_type: data.doc_type });
 
     const { supabaseAdmin: rawAdmin } = await import("@/integrations/supabase/client.server");
     const admin = rawAdmin as unknown as AdminClient;
 
-    // 1. Check if user already onboarded
+    // 1. Idempotency: if profile already has company, return it
     const { data: existing, error: profErr } = await admin
       .from("profiles")
       .select("company_id")
       .eq("id", userId)
       .maybeSingle();
-    if (profErr) throw new Error(profErr.message);
+    if (profErr) {
+      console.error("[onboarding] profile lookup failed", profErr);
+      throw new Error(profErr.message);
+    }
     if (existing?.company_id) {
+      log("already-onboarded", { company_id: existing.company_id });
       return { company_id: existing.company_id, already: true };
     }
 
@@ -61,23 +69,40 @@ export const completeOnboarding = createServerFn({ method: "POST" })
       legal_name: data.doc_type === "pj" ? data.legal_name ?? null : null,
       trade_name: data.trade_name,
     });
-    if (cErr) throw new Error(cErr.message);
+    if (cErr) {
+      console.error("[onboarding] company insert failed", { companyId, err: cErr });
+      throw new Error(`Falha ao criar empresa: ${cErr.message}`);
+    }
+    log("company-created", { company_id: companyId });
 
-    // 3. Ensure profile exists and is linked to company BEFORE inserting role
+    // 3. Link profile to company BEFORE inserting role (order matters)
     const { error: pErr } = await admin.from("profiles").upsert({
       id: userId,
       full_name: data.full_name,
       company_id: companyId,
     });
-    if (pErr) throw new Error(pErr.message);
+    if (pErr) {
+      console.error("[onboarding] profile upsert failed", { userId, companyId, err: pErr });
+      throw new Error(`Falha ao vincular perfil: ${pErr.message}`);
+    }
+    log("profile-linked", { profile_id: userId, company_id: companyId });
 
-    // 4. Now create user_roles entry (order matters: company + profile first)
+    // 4. Insert owner role (service_role bypasses RLS on user_roles)
     const { error: rErr } = await admin.from("user_roles").insert({
       user_id: userId,
       company_id: companyId,
       role: "owner",
     });
-    if (rErr) throw new Error(rErr.message);
+    if (rErr) {
+      console.error("[onboarding] user_roles insert failed", {
+        userId,
+        companyId,
+        role: "owner",
+        err: rErr,
+      });
+      throw new Error(`Falha ao atribuir função: ${rErr.message}`);
+    }
+    log("role-inserted", { profile_id: userId, company_id: companyId, role: "owner" });
 
     return { company_id: companyId, already: false };
   });
