@@ -8,27 +8,49 @@ type RoleRow = { role: AppRole; company_id: string };
 const db = supabase as unknown as { from: (t: string) => any };
 
 export function useAuthRole(userId: string | undefined) {
-  const query = useQuery({
-    queryKey: ["user-roles", userId],
+  // Descobre a company_id do usuário logado a partir do profile — evita
+  // misturar roles de múltiplas empresas caso o mesmo user_id apareça
+  // em user_roles de mais de uma company_id.
+  const profileQuery = useQuery({
+    queryKey: ["profile-company", userId],
     enabled: !!userId,
+    staleTime: 60_000,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await db
+        .from("profiles")
+        .select("company_id")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.company_id as string | null) ?? null;
+    },
+  });
+
+  const companyId = profileQuery.data ?? null;
+
+  const rolesQuery = useQuery({
+    queryKey: ["user-roles", userId, companyId],
+    enabled: !!userId && !!companyId,
     staleTime: 60_000,
     queryFn: async (): Promise<RoleRow[]> => {
       const { data, error } = await db
         .from("user_roles")
         .select("role, company_id")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .eq("company_id", companyId);
       if (error) throw error;
       return (data ?? []) as RoleRow[];
     },
   });
 
-  const roles = (query.data ?? []).map((r) => r.role);
+  const roles = (rolesQuery.data ?? []).map((r) => r.role);
   const hasRole = (r: AppRole) => roles.includes(r);
   const hasAny = (rs: AppRole[]) => rs.some((r) => roles.includes(r));
 
   return {
     roles,
-    isLoading: query.isLoading,
+    companyId,
+    isLoading: profileQuery.isLoading || (!!companyId && rolesQuery.isLoading),
     isOwner: hasRole("owner"),
     hasRole,
     hasAny,
