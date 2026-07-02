@@ -52,10 +52,44 @@ import {
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    const user = data.user;
+
+    // Gate de onboarding: bloqueia acesso a rotas protegidas até o profile
+    // ter company_id. Executado antes de qualquer render — evita flash.
+    let profile: {
+      full_name: string | null;
+      company_id: string | null;
+      companyName: string | null;
+    } = { full_name: null, company_id: null, companyName: null };
+    try {
+      const { data: p, error: pErr } = await supabase
+        .from("profiles")
+        .select("full_name, company_id, companies(name)")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (pErr) throw pErr;
+      const c = (p?.companies ?? null) as { name?: string } | null;
+      profile = {
+        full_name: p?.full_name ?? null,
+        company_id: p?.company_id ?? null,
+        companyName: c?.name ?? null,
+      };
+    } catch (e) {
+      console.error("[auth-gate] falha ao carregar profile", e);
+      // Falha transitória: deixa entrar; a UI mostrará estado de erro na página.
+    }
+
+    const path = location.pathname;
+    if (!profile.company_id && path !== "/onboarding") {
+      throw redirect({ to: "/onboarding" });
+    }
+    if (profile.company_id && path === "/onboarding") {
+      throw redirect({ to: "/pedidos" });
+    }
+    return { user, profile };
   },
   component: AuthenticatedLayout,
 });
