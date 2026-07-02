@@ -153,6 +153,10 @@ function AuthenticatedLayout() {
 
   const roleLabel = isOwner ? "Gestor" : roles[0] ?? "Membro";
 
+  if (pathname === "/onboarding") {
+    return <Outlet />;
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-secondary/40">
