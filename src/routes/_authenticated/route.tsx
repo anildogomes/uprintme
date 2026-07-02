@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Printer, LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
 import logoAsset from "@/assets/logo.png.asset.json";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
