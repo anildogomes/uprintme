@@ -2,9 +2,10 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Printer, LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, Wallet, Store, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import logoUm from "@/assets/logoUm.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -68,11 +69,8 @@ function AuthenticatedLayout() {
   return (
     <div className="flex min-h-screen bg-secondary/40">
       <aside className="hidden w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Printer className="h-4 w-4" />
-          </div>
-          <span className="font-bold tracking-tight">UprintMe</span>
+        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
+          <img src={logoUm.url} alt="UprintMe" className="h-8 w-auto" />
         </div>
         <nav className="flex-1 space-y-1 p-4">
           {nav.map((item) => {

@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  Printer,
   CheckCircle2,
   Rocket,
   TrendingUp,
@@ -16,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import logoUm from "@/assets/logoUm.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -60,15 +60,8 @@ function MobileHero() {
   }, [navigate]);
   return (
     <section className="flex flex-1 flex-col items-center px-6 pt-16 pb-8 text-center">
-      <div
-        className="flex h-32 w-32 items-center justify-center rounded-3xl text-primary-foreground shadow-[var(--shadow-elegant)]"
-        style={{ background: "var(--gradient-primary)" }}
-      >
-        <Printer className="h-16 w-16" />
-      </div>
-      <h1 className="mt-8 text-4xl font-bold tracking-tight">
-        <span className="text-primary">U</span>printMe
-      </h1>
+      <img src={logoUm.url} alt="UprintMe" className="h-24 w-auto" />
+      <h1 className="sr-only">UprintMe</h1>
       <p className="mt-6 text-base text-muted-foreground">
         Pedidos, clientes e{" "}
         <span className="font-semibold text-primary">crescimento</span> em um só lugar.
@@ -112,10 +105,7 @@ function Header() {
     <header className="border-b border-border/60 bg-background">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
-            <Printer className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">UprintMe</span>
+          <img src={logoUm.url} alt="UprintMe" className="h-8 w-auto" />
         </Link>
         <Link to="/auth">
           <Button size="sm" variant="ghost">Acessar sistema</Button>
