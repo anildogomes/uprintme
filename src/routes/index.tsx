@@ -105,10 +105,7 @@ function Header() {
     <header className="border-b border-border/60 bg-background">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
-            <Printer className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">UprintMe</span>
+          <img src={logoUm.url} alt="UprintMe" className="h-8 w-auto" />
         </Link>
         <Link to="/auth">
           <Button size="sm" variant="ghost">Acessar sistema</Button>
