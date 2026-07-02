@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Loader2, Trash2, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthRole } from "@/hooks/useAuthRole";
 
 export const Route = createFileRoute("/_authenticated/pedidos")({
   component: PedidosPage,
@@ -75,10 +76,25 @@ const db = supabase as unknown as {
 
 function PedidosPage() {
   const qc = useQueryClient();
-  const [view, setView] = useState<"list" | "kanban">("list");
+  const [userId, setUserId] = useState<string | undefined>();
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id));
+  }, []);
+  const { roles, isOwner, hasAny } = useAuthRole(userId);
+  const isProducaoOnly = hasAny(["producao"]) && !isOwner && !hasAny(["vendedor"]);
+  const canCreate = isOwner || hasAny(["vendedor"]);
+  const canDelete = isOwner || hasAny(["vendedor"]);
+  const allowedStatuses: OrderStatus[] = isOwner || hasAny(["vendedor"])
+    ? ["novo", "em_producao", "pronto", "entregue", "cancelado"]
+    : ["em_producao", "pronto"]; // produção só transiciona nessas
+  const [view, setView] = useState<"list" | "kanban">(isProducaoOnly ? "kanban" : "list");
+  useEffect(() => {
+    if (isProducaoOnly) setView("kanban");
+  }, [isProducaoOnly]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [openNew, setOpenNew] = useState(false);
+  void roles;
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey: ["orders"],
@@ -183,11 +199,13 @@ function PedidosPage() {
             </Button>
           </div>
           <Dialog open={openNew} onOpenChange={setOpenNew}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" /> Novo pedido
-              </Button>
-            </DialogTrigger>
+            {canCreate && (
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" /> Novo pedido
+                </Button>
+              </DialogTrigger>
+            )}
             <NewOrderDialog clients={clients} onDone={() => setOpenNew(false)} />
           </Dialog>
         </div>
@@ -223,24 +241,27 @@ function PedidosPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState onNew={() => setOpenNew(true)} hasAny={orders.length > 0} />
+        <EmptyState onNew={() => setOpenNew(true)} hasAny={orders.length > 0} canCreate={canCreate} />
       ) : view === "list" ? (
         <ListView
           orders={filtered}
           onStatus={(id, status) => updateStatus.mutate({ id, status })}
           onDelete={(id) => removeOrder.mutate(id)}
+          allowedStatuses={allowedStatuses}
+          canDelete={canDelete}
         />
       ) : (
         <KanbanView
           orders={filtered}
           onStatus={(id, status) => updateStatus.mutate({ id, status })}
+          allowedStatuses={allowedStatuses}
         />
       )}
     </div>
   );
 }
 
-function EmptyState({ onNew, hasAny }: { onNew: () => void; hasAny: boolean }) {
+function EmptyState({ onNew, hasAny, canCreate }: { onNew: () => void; hasAny: boolean; canCreate: boolean }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
       <h3 className="text-lg font-semibold">
@@ -251,9 +272,11 @@ function EmptyState({ onNew, hasAny }: { onNew: () => void; hasAny: boolean }) {
           ? "Ajuste os filtros ou crie um novo pedido."
           : "Comece cadastrando seu primeiro pedido para acompanhar produção e entrega."}
       </p>
-      <Button onClick={onNew} className="mt-4 gap-2">
-        <Plus className="h-4 w-4" /> Novo pedido
-      </Button>
+      {canCreate && (
+        <Button onClick={onNew} className="mt-4 gap-2">
+          <Plus className="h-4 w-4" /> Novo pedido
+        </Button>
+      )}
     </div>
   );
 }
@@ -262,10 +285,14 @@ function ListView({
   orders,
   onStatus,
   onDelete,
+  allowedStatuses,
+  canDelete,
 }: {
   orders: Order[];
   onStatus: (id: string, status: OrderStatus) => void;
   onDelete: (id: string) => void;
+  allowedStatuses: OrderStatus[];
+  canDelete: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)]">
@@ -282,42 +309,54 @@ function ListView({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((o) => (
-            <TableRow key={o.id}>
-              <TableCell className="font-mono text-xs">{o.code}</TableCell>
-              <TableCell className="font-medium">{o.title}</TableCell>
-              <TableCell className="text-muted-foreground">{o.clients?.name ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {o.due_date ? new Date(o.due_date).toLocaleDateString("pt-BR") : "—"}
-              </TableCell>
-              <TableCell>{brl(o.total_cents)}</TableCell>
-              <TableCell>
-                <Select value={o.status} onValueChange={(v) => onStatus(o.id, v as OrderStatus)}>
-                  <SelectTrigger className="h-8 w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    if (confirm(`Remover pedido ${o.code}?`)) onDelete(o.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((o) => {
+            const canEditStatus = allowedStatuses.includes(o.status);
+            const options = STATUSES.filter((s) => allowedStatuses.includes(s.value));
+            return (
+              <TableRow key={o.id}>
+                <TableCell className="font-mono text-xs">{o.code}</TableCell>
+                <TableCell className="font-medium">{o.title}</TableCell>
+                <TableCell className="text-muted-foreground">{o.clients?.name ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {o.due_date ? new Date(o.due_date).toLocaleDateString("pt-BR") : "—"}
+                </TableCell>
+                <TableCell>{brl(o.total_cents)}</TableCell>
+                <TableCell>
+                  {canEditStatus ? (
+                    <Select value={o.status} onValueChange={(v) => onStatus(o.id, v as OrderStatus)}>
+                      <SelectTrigger className="h-8 w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {options.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="outline" className={statusTone(o.status)}>
+                      {statusLabel(o.status)}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {canDelete && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`Remover pedido ${o.code}?`)) onDelete(o.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -327,15 +366,22 @@ function ListView({
 function KanbanView({
   orders,
   onStatus,
+  allowedStatuses,
 }: {
   orders: Order[];
   onStatus: (id: string, status: OrderStatus) => void;
+  allowedStatuses: OrderStatus[];
 }) {
-  const cols = STATUSES.filter((s) => s.value !== "cancelado");
+  // Colunas visíveis: exclui cancelado; para perfil restrito, mostra só as colunas permitidas
+  const restricted = !allowedStatuses.includes("novo");
+  const cols = STATUSES.filter((s) => s.value !== "cancelado").filter((s) =>
+    restricted ? allowedStatuses.includes(s.value) : true,
+  );
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${restricted ? "lg:grid-cols-2" : "lg:grid-cols-4"}`}>
       {cols.map((col) => {
         const items = orders.filter((o) => o.status === col.value);
+        const canDrop = allowedStatuses.includes(col.value);
         return (
           <div key={col.value} className="rounded-2xl border border-border bg-card p-3">
             <div className="mb-3 flex items-center justify-between px-1">
@@ -343,19 +389,22 @@ function KanbanView({
               <span className="text-xs text-muted-foreground">{items.length}</span>
             </div>
             <div
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(e) => canDrop && e.preventDefault()}
               onDrop={(e) => {
+                if (!canDrop) return;
                 const id = e.dataTransfer.getData("text/plain");
                 if (id) onStatus(id, col.value);
               }}
               className="flex min-h-[120px] flex-col gap-2"
             >
-              {items.map((o) => (
+              {items.map((o) => {
+                const canDrag = allowedStatuses.includes(o.status);
+                return (
                 <div
                   key={o.id}
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData("text/plain", o.id)}
-                  className="cursor-grab rounded-xl border border-border bg-background p-3 shadow-sm active:cursor-grabbing"
+                  draggable={canDrag}
+                  onDragStart={(e) => canDrag && e.dataTransfer.setData("text/plain", o.id)}
+                  className={`rounded-xl border border-border bg-background p-3 shadow-sm ${canDrag ? "cursor-grab active:cursor-grabbing" : "opacity-70"}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-mono text-[10px] text-muted-foreground">{o.code}</span>
@@ -371,7 +420,8 @@ function KanbanView({
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
               {items.length === 0 && (
                 <div className="rounded-lg border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
                   Arraste aqui
