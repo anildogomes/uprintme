@@ -60,15 +60,8 @@ function MobileHero() {
   }, [navigate]);
   return (
     <section className="flex flex-1 flex-col items-center px-6 pt-16 pb-8 text-center">
-      <div
-        className="flex h-32 w-32 items-center justify-center rounded-3xl text-primary-foreground shadow-[var(--shadow-elegant)]"
-        style={{ background: "var(--gradient-primary)" }}
-      >
-        <Printer className="h-16 w-16" />
-      </div>
-      <h1 className="mt-8 text-4xl font-bold tracking-tight">
-        <span className="text-primary">U</span>printMe
-      </h1>
+      <img src={logoUm.url} alt="UprintMe" className="h-24 w-auto" />
+      <h1 className="sr-only">UprintMe</h1>
       <p className="mt-6 text-base text-muted-foreground">
         Pedidos, clientes e{" "}
         <span className="font-semibold text-primary">crescimento</span> em um só lugar.
