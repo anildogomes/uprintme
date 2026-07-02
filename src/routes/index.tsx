@@ -193,18 +193,34 @@ function HeroSplit() {
 
 function AuthCard() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-elegant)] sm:p-8">
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-bold tracking-tight">UprintMe</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Acesse o painel da sua gráfica
+    <div
+      className="relative rounded-3xl border border-border/70 bg-card/95 p-8 backdrop-blur sm:p-10"
+      style={{ boxShadow: "var(--shadow-elegant)" }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-px left-8 right-8 h-px"
+        style={{ background: "var(--gradient-gold)" }}
+      />
+      <div className="mb-8 text-center">
+        <div
+          className="mx-auto mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full"
+          style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-gold)" }}
+        >
+          <span className="font-display text-sm font-bold text-primary-foreground">U</span>
+        </div>
+        <h2 className="font-display text-2xl font-semibold tracking-tight">
+          Acesse sua conta
+        </h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Continue de onde parou
         </p>
       </div>
 
       <Tabs defaultValue="signin">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">Entrar</TabsTrigger>
-          <TabsTrigger value="signup">Criar conta</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 rounded-full">
+          <TabsTrigger value="signin" className="rounded-full">Entrar</TabsTrigger>
+          <TabsTrigger value="signup" className="rounded-full">Criar conta</TabsTrigger>
         </TabsList>
         <TabsContent value="signin" className="mt-6">
           <QuickSignIn />
