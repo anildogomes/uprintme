@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LSlugRouteImport } from './routes/l.$slug'
 import { Route as AuthenticatedPedidosRouteImport } from './routes/_authenticated/pedidos'
+import { Route as AuthenticatedMembrosRouteImport } from './routes/_authenticated/membros'
 import { Route as AuthenticatedLojaRouteImport } from './routes/_authenticated/loja'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -41,6 +42,11 @@ const LSlugRoute = LSlugRouteImport.update({
 const AuthenticatedPedidosRoute = AuthenticatedPedidosRouteImport.update({
   id: '/pedidos',
   path: '/pedidos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMembrosRoute = AuthenticatedMembrosRouteImport.update({
+  id: '/membros',
+  path: '/membros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLojaRoute = AuthenticatedLojaRouteImport.update({
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/loja': typeof AuthenticatedLojaRoute
+  '/membros': typeof AuthenticatedMembrosRoute
   '/pedidos': typeof AuthenticatedPedidosRoute
   '/l/$slug': typeof LSlugRoute
 }
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/loja': typeof AuthenticatedLojaRoute
+  '/membros': typeof AuthenticatedMembrosRoute
   '/pedidos': typeof AuthenticatedPedidosRoute
   '/l/$slug': typeof LSlugRoute
 }
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/loja': typeof AuthenticatedLojaRoute
+  '/_authenticated/membros': typeof AuthenticatedMembrosRoute
   '/_authenticated/pedidos': typeof AuthenticatedPedidosRoute
   '/l/$slug': typeof LSlugRoute
 }
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/financeiro'
     | '/loja'
+    | '/membros'
     | '/pedidos'
     | '/l/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/financeiro'
     | '/loja'
+    | '/membros'
     | '/pedidos'
     | '/l/$slug'
   id:
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/financeiro'
     | '/_authenticated/loja'
+    | '/_authenticated/membros'
     | '/_authenticated/pedidos'
     | '/l/$slug'
   fileRoutesById: FileRoutesById
@@ -174,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPedidosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/membros': {
+      id: '/_authenticated/membros'
+      path: '/membros'
+      fullPath: '/membros'
+      preLoaderRoute: typeof AuthenticatedMembrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/loja': {
       id: '/_authenticated/loja'
       path: '/loja'
@@ -210,6 +229,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedLojaRoute: typeof AuthenticatedLojaRoute
+  AuthenticatedMembrosRoute: typeof AuthenticatedMembrosRoute
   AuthenticatedPedidosRoute: typeof AuthenticatedPedidosRoute
 }
 
@@ -218,6 +238,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedLojaRoute: AuthenticatedLojaRoute,
+  AuthenticatedMembrosRoute: AuthenticatedMembrosRoute,
   AuthenticatedPedidosRoute: AuthenticatedPedidosRoute,
 }
 
