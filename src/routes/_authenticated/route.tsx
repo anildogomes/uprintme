@@ -138,43 +138,13 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 function AuthenticatedLayout() {
-  const { user } = Route.useRouteContext();
+  const { user, profile } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [companyName, setCompanyName] = useState<string>("");
-  const [fullName, setFullName] = useState<string>("");
+  const companyName = profile.companyName ?? "";
+  const fullName = profile.full_name ?? "";
   const { roles, isLoading: rolesLoading, isOwner } = useAuthRole(user.id);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  useEffect(() => {
-    (supabase as unknown as {
-      from: (t: string) => {
-        select: (s: string) => {
-          eq: (c: string, v: string) => {
-            maybeSingle: () => Promise<{
-              data: {
-                full_name?: string | null;
-                company_id?: string | null;
-                companies?: { name?: string } | null;
-              } | null;
-            }>;
-          };
-        };
-      };
-    })
-      .from("profiles")
-      .select("full_name, company_id, companies(name)")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const c = data?.companies as { name?: string } | null | undefined;
-        if (c?.name) setCompanyName(c.name);
-        if (data?.full_name) setFullName(data.full_name);
-        if (data && !data.company_id && pathname !== "/onboarding") {
-          navigate({ to: "/onboarding", replace: true });
-        }
-      });
-  }, [user.id, pathname, navigate]);
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
