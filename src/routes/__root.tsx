@@ -77,15 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "UprintMe — Gestão para gráficas rápidas" },
+      { name: "description", content: "SaaS completo para gráficas rápidas: pedidos, financeiro, comissões e loja virtual — tudo em um lugar." },
+      { name: "author", content: "UprintMe" },
+      { property: "og:title", content: "UprintMe — Gestão para gráficas rápidas" },
+      { property: "og:description", content: "Substitua o Excel: gerencie pedidos, arte, financeiro e sua loja virtual em uma plataforma clean." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
-    ],
     links: [
       {
         rel: "stylesheet",
