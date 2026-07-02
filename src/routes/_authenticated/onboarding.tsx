@@ -38,8 +38,15 @@ function OnboardingPage() {
   const [tradeName, setTradeName] = useState("");
 
   const submit = useServerFn(completeOnboarding);
+  type Payload = {
+    doc_type: "pf" | "pj";
+    full_name: string;
+    doc_number: string;
+    legal_name: string | null;
+    trade_name: string;
+  };
   const mutation = useMutation({
-    mutationFn: (payload: Parameters<typeof submit>[0]["data"]) => submit({ data: payload }),
+    mutationFn: (payload: Payload) => submit({ data: payload }),
     onSuccess: async () => {
       await queryClient.invalidateQueries();
       toast.success("Empresa criada com sucesso!");
