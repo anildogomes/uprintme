@@ -34,12 +34,76 @@ export const Route = createFileRoute("/")({
 function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <Header />
-      <main className="flex-1">
-        <HeroSplit />
-      </main>
-      <Footer />
+      {/* Mobile layout — matches reference */}
+      <div className="flex flex-1 flex-col lg:hidden">
+        <MobileHero />
+        <MobileFooter />
+      </div>
+      {/* Desktop layout */}
+      <div className="hidden flex-1 flex-col lg:flex">
+        <Header />
+        <main className="flex-1">
+          <HeroSplit />
+        </main>
+        <Footer />
+      </div>
     </div>
+  );
+}
+
+function MobileHero() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/dashboard", replace: true });
+    });
+  }, [navigate]);
+  return (
+    <section className="flex flex-1 flex-col items-center px-6 pt-16 pb-8 text-center">
+      <div
+        className="flex h-32 w-32 items-center justify-center rounded-3xl text-primary-foreground shadow-[var(--shadow-elegant)]"
+        style={{ background: "var(--gradient-primary)" }}
+      >
+        <Printer className="h-16 w-16" />
+      </div>
+      <h1 className="mt-8 text-4xl font-bold tracking-tight">
+        <span className="text-primary">U</span>printMe
+      </h1>
+      <p className="mt-6 text-base text-muted-foreground">
+        Pedidos, clientes e{" "}
+        <span className="font-semibold text-primary">crescimento</span> em um só lugar.
+      </p>
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+        Sistema completo e inteligente para sua gráfica produzir mais, organizar o negócio e tomar decisões com confiança.
+      </p>
+      <div className="mt-auto w-full pt-12">
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/auth" search={{ mode: "signin" }}>
+            <Button className="h-14 w-full text-base font-semibold">Entrar</Button>
+          </Link>
+          <Link to="/auth" search={{ mode: "signup" }}>
+            <Button variant="outline" className="h-14 w-full text-base font-semibold">
+              Começar Grátis
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MobileFooter() {
+  return (
+    <footer className="border-t border-border/60 px-6 py-5 text-center text-xs text-muted-foreground">
+      <div className="flex items-center justify-center gap-6">
+        <a href="#" className="hover:text-foreground">Termos de Uso</a>
+        <a href="#" className="hover:text-foreground">Privacidade</a>
+        <a href="#" className="hover:text-foreground">Suporte</a>
+      </div>
+      <p className="mt-3">
+        © {new Date().getFullYear()} UprintMe. Todos os direitos reservados.
+      </p>
+    </footer>
   );
 }
 
