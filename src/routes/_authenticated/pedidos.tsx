@@ -366,15 +366,22 @@ function ListView({
 function KanbanView({
   orders,
   onStatus,
+  allowedStatuses,
 }: {
   orders: Order[];
   onStatus: (id: string, status: OrderStatus) => void;
+  allowedStatuses: OrderStatus[];
 }) {
-  const cols = STATUSES.filter((s) => s.value !== "cancelado");
+  // Colunas visíveis: exclui cancelado; para perfil restrito, mostra só as colunas permitidas
+  const restricted = !allowedStatuses.includes("novo");
+  const cols = STATUSES.filter((s) => s.value !== "cancelado").filter((s) =>
+    restricted ? allowedStatuses.includes(s.value) : true,
+  );
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${restricted ? "lg:grid-cols-2" : "lg:grid-cols-4"}`}>
       {cols.map((col) => {
         const items = orders.filter((o) => o.status === col.value);
+        const canDrop = allowedStatuses.includes(col.value);
         return (
           <div key={col.value} className="rounded-2xl border border-border bg-card p-3">
             <div className="mb-3 flex items-center justify-between px-1">
@@ -382,19 +389,22 @@ function KanbanView({
               <span className="text-xs text-muted-foreground">{items.length}</span>
             </div>
             <div
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(e) => canDrop && e.preventDefault()}
               onDrop={(e) => {
+                if (!canDrop) return;
                 const id = e.dataTransfer.getData("text/plain");
                 if (id) onStatus(id, col.value);
               }}
               className="flex min-h-[120px] flex-col gap-2"
             >
-              {items.map((o) => (
+              {items.map((o) => {
+                const canDrag = allowedStatuses.includes(o.status);
+                return (
                 <div
                   key={o.id}
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData("text/plain", o.id)}
-                  className="cursor-grab rounded-xl border border-border bg-background p-3 shadow-sm active:cursor-grabbing"
+                  draggable={canDrag}
+                  onDragStart={(e) => canDrag && e.dataTransfer.setData("text/plain", o.id)}
+                  className={`rounded-xl border border-border bg-background p-3 shadow-sm ${canDrag ? "cursor-grab active:cursor-grabbing" : "opacity-70"}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-mono text-[10px] text-muted-foreground">{o.code}</span>
