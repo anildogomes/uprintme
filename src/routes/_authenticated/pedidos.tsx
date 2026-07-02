@@ -285,10 +285,14 @@ function ListView({
   orders,
   onStatus,
   onDelete,
+  allowedStatuses,
+  canDelete,
 }: {
   orders: Order[];
   onStatus: (id: string, status: OrderStatus) => void;
   onDelete: (id: string) => void;
+  allowedStatuses: OrderStatus[];
+  canDelete: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)]">
@@ -305,42 +309,54 @@ function ListView({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((o) => (
-            <TableRow key={o.id}>
-              <TableCell className="font-mono text-xs">{o.code}</TableCell>
-              <TableCell className="font-medium">{o.title}</TableCell>
-              <TableCell className="text-muted-foreground">{o.clients?.name ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {o.due_date ? new Date(o.due_date).toLocaleDateString("pt-BR") : "—"}
-              </TableCell>
-              <TableCell>{brl(o.total_cents)}</TableCell>
-              <TableCell>
-                <Select value={o.status} onValueChange={(v) => onStatus(o.id, v as OrderStatus)}>
-                  <SelectTrigger className="h-8 w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    if (confirm(`Remover pedido ${o.code}?`)) onDelete(o.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((o) => {
+            const canEditStatus = allowedStatuses.includes(o.status);
+            const options = STATUSES.filter((s) => allowedStatuses.includes(s.value));
+            return (
+              <TableRow key={o.id}>
+                <TableCell className="font-mono text-xs">{o.code}</TableCell>
+                <TableCell className="font-medium">{o.title}</TableCell>
+                <TableCell className="text-muted-foreground">{o.clients?.name ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {o.due_date ? new Date(o.due_date).toLocaleDateString("pt-BR") : "—"}
+                </TableCell>
+                <TableCell>{brl(o.total_cents)}</TableCell>
+                <TableCell>
+                  {canEditStatus ? (
+                    <Select value={o.status} onValueChange={(v) => onStatus(o.id, v as OrderStatus)}>
+                      <SelectTrigger className="h-8 w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {options.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="outline" className={statusTone(o.status)}>
+                      {statusLabel(o.status)}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {canDelete && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`Remover pedido ${o.code}?`)) onDelete(o.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
